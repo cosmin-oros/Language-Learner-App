@@ -1,4 +1,4 @@
-package com.example.languagelearnerapp.ui.theme
+package com.example.languagelearnerapp
 
 import com.example.languagelearnerapp.LanguageData
 

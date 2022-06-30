@@ -3,6 +3,9 @@ package com.example.languagelearnerapp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -14,14 +17,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.toLowerCase
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.languagelearnerapp.ui.theme.LanguageLearnerAppTheme
-import com.example.languagelearnerapp.ui.theme.ListOfWords
 import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.collections.ArrayList
@@ -40,6 +45,7 @@ class MainActivity : ComponentActivity() {
                 var word by remember{
                     mutableStateOf(GetRandomWord(wordsList = wordsList).randomWord())
                 }
+                var percentage: Float = 0F
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
@@ -98,11 +104,17 @@ class MainActivity : ComponentActivity() {
                                     scope.launch {
                                         word = GetRandomWord(wordsList = wordsList).randomWord()
                                         textFieldState = ""
+                                        if (percentage < 100){
+                                            percentage += 0.01F
+                                        }
                                     }
                                 }else{
                                     scope.launch {
                                         scaffoldState.snackbarHostState.showSnackbar("Try again")
                                         textFieldState = ""
+                                        if (percentage > 0){
+                                            percentage -= 0.01F
+                                        }
                                     }
                                 }
                             },
@@ -142,6 +154,7 @@ class MainActivity : ComponentActivity() {
                                     scope.launch {
                                         word = GetRandomWord(wordsList = wordsList).randomWord()
                                         textFieldState = ""
+                                        percentage = 0F
                                     }
                             },
                                 colors = ButtonDefaults.buttonColors(
@@ -175,6 +188,10 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
+                        Spacer(modifier = Modifier.size(64.dp))
+
+                        CircularProgressBar(percentage = percentage, number = 100)
+
                     }
 
                 }
@@ -187,5 +204,58 @@ class MainActivity : ComponentActivity() {
 class GetRandomWord(val wordsList: ArrayList<LanguageData>){
     fun randomWord(): LanguageData{
         return wordsList.random()
+    }
+}
+
+@Composable
+fun CircularProgressBar(
+    percentage: Float,
+    number: Int,
+    fontSize: TextUnit = 28.sp,
+    radius: Dp = 50.dp,
+    color: Color = Color.Yellow,
+    strokeWidth: Dp = 8.dp,
+    animDuration: Int = 1000,
+    animDelay: Int = 0
+){
+    var animationPlayed by remember{
+        mutableStateOf(false)
+    }
+
+    val curPercentage = animateFloatAsState(
+        targetValue = if (animationPlayed){
+            percentage
+        }else{
+            0f
+        },
+        animationSpec = tween(
+            durationMillis = animDuration,
+            delayMillis = animDelay
+        )
+    )
+
+    LaunchedEffect(key1 = true){
+        animationPlayed = true
+    }
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.size(radius * 2f)
+    ){
+        Canvas(modifier = Modifier.size(radius * 2f)){
+            drawArc(
+                color = color,
+                -90f,
+                360 * curPercentage.value,
+                useCenter = false,
+                style = Stroke(strokeWidth.toPx(), cap = StrokeCap.Round)
+            )
+        }
+        Text(
+            text = (curPercentage.value * number).toInt().toString(),
+            color = Color.Yellow,
+            fontSize = fontSize,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
